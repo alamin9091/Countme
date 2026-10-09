@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10152f">
+<title>CountMe Premium Countdown</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:22px;
+  font-family:system-ui,sans-serif;
+  background:#0b1024;color:#fff;
+}
+main{max-width:480px;margin:auto}
+h1{color:#71eee4;margin-bottom:4px}
+p{color:#bdc7e5}
+.panel{
+  background:#171f3d;padding:20px;
+  border-radius:22px;margin-top:18px;
+}
+input,button,select{
+  width:100%;padding:13px;margin-top:10px;
+  border-radius:12px;border:0;font-size:16px;
+}
+input,select{background:#263153;color:white}
+button{
+  background:#7359ff;color:white;
+  font-weight:bold;cursor:pointer
+}
+.poster{
+  text-align:center;padding:25px 12px;
+  border-radius:22px;margin-top:20px;
+  background:linear-gradient(145deg,#243b77,#662b83);
+}
+.poster h2{overflow-wrap:anywhere}
+#days{font-size:36px;font-weight:800}
+#clock{font-size:17px;color:#b8fff3}
+.small{font-size:12px;color:#c8d0e8}
+</style>
+</head>
+<body>
+<main>
+  <h1>◷ CountMe</h1>
+  <p>Your Time, Your Story</p>
+
+  <section class="panel">
+    <h2>নতুন কাউন্টডাউন</h2>
+
+    <label for="event">ইভেন্টের নাম</label>
+    <input id="event" value="আমার বিশেষ দিন"
+           maxlength="70">
+
+    <label for="target">তারিখ ও সময়</label>
+    <input id="target" type="datetime-local">
+
+    <label for="theme">ডিজাইনের রং</label>
+    <select id="theme">
+      <option value="purple">প্রিমিয়াম বেগুনি</option>
+      <option value="blue">আকাশি নীল</option>
+      <option value="pink">গোলাপি</option>
+      <option value="green">টিল সবুজ</option>
+    </select>
+
+    <button id="create">কাউন্টডাউন তৈরি করুন</button>
+    <p class="small">
+      সময় আপনার ফোনের স্থানীয় সময় অনুযায়ী গণনা হবে।
+    </p>
+  </section>
+
+  <section class="poster" id="poster">
+    <p>COUNTDOWN TO</p>
+    <h2 id="title">আমার বিশেষ দিন</h2>
+    <div id="days">তারিখ নির্বাচন করুন</div>
+    <div id="clock">-- ঘণ্টা -- মিনিট -- সেকেন্ড</div>
+    <p class="small" id="dateLabel"></p>
+    <p class="small">Made with CountMe</p>
+  </section>
+
+  <button id="share">কাউন্টডাউন শেয়ার করুন</button>
+  <button id="save">পোস্টার হিসেবে সংরক্ষণ করুন</button>
+  <p class="small" id="status"></p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let targetTime = 0;
+let timer = null;
+
+const themes = {
+  purple: "linear-gradient(145deg,#243b77,#662b83)",
+  blue: "linear-gradient(145deg,#075985,#2563eb)",
+  pink: "linear-gradient(145deg,#831843,#db2777)",
+  green: "linear-gradient(145deg,#064e3b,#0d9488)"
+};
+
+function update() {
+  if (!targetTime) return;
+
+  let left = Math.max(0, targetTime - Date.now());
+  let total = Math.floor(left / 1000);
+
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor(total % 86400 / 3600);
+  const mins = Math.floor(total % 3600 / 60);
+  const secs = total % 60;
+
+  $("days").textContent = left === 0
+    ? "সময় এসে গেছে!"
+    : days + " দিন";
+
+  $("clock").textContent =
+    String(hours).padStart(2,"0") + " ঘণ্টা " +
+    String(mins).padStart(2,"0") + " মিনিট " +
+    String(secs).padStart(2,"0") + " সেকেন্ড";
+}
+
+$("create").onclick = () => {
+  const date = new Date($("target").value);
+
+  if (!$("event").value.trim() ||
+      !$("target").value || isNaN(date.getTime())) {
+    $("status").textContent =
+      "ইভেন্টের নাম এবং সঠিক তারিখ ও সময় দিন।";
+    return;
+  }
+
+  if (date.getTime() <= Date.now()) {
+    $("status").textContent =
+      "ভবিষ্যতের একটি তারিখ ও সময় নির্বাচন করুন।";
+    return;
+  }
+
+  targetTime = date.getTime();
+  $("title").textContent = $("event").value.trim();
+  $("poster").style.background = themes[$("theme").value];
+  $("dateLabel").textContent =
+    date.toLocaleString("bn-BD");
+
+  clearInterval(timer);
+  update();
+  timer = setInterval(update, 1000);
+
+  $("status").textContent = "কাউন্টডাউন তৈরি হয়েছে!";
+};
+
+$("theme").onchange = () => {
+  $("poster").style.background = themes[$("theme").value];
+};
+
+$("share").onclick = async () => {
+  if (!targetTime) {
+    $("status").textContent = "আগে কাউন্টডাউন তৈরি করুন।";
+    return;
+  }
+
+  const text = $("title").textContent + "\n" +
+    $("days").textContent + "\n" +
+    $("clock").textContent + "\n" +
+    "CountMe Countdown";
+
+  if (navigator.share) {
+    try {
+      await navigator.share({title:"CountMe", text});
+    } catch (_) {}
+  } else {
+    $("status").textContent =
+      "আপনার ব্রাউজার থেকে লেখা কপি করে শেয়ার করুন।";
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {}
+  }
+};
+
+$("save").onclick = async () => {
+  $("status").textContent =
+    "পোস্টার সংরক্ষণের সুবিধা পরবর্তী সংস্করণে যোগ হবে।";
+};
+</script>
+</body>
+</html>
